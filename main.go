@@ -22,7 +22,10 @@ const (
 	//size = 2.5
 
 	// Quality
-	imgWidth = 1024
+	// imgWidth = 1024
+	// imgHeight = 1024
+	imgWidth = 1920
+	imgHeight = 1080
 	maxIter  = 1000
 	samples  = 50
 
@@ -31,7 +34,7 @@ const (
 
 func main() {
 	log.Println("Allocating image...")
-	img := image.NewRGBA(image.Rect(0, 0, imgWidth, imgWidth))
+	img := image.NewRGBA(image.Rect(0, 0, imgWidth, imgHeight))
 
 	log.Println("Rendering...")
 	start := time.Now()
@@ -60,14 +63,14 @@ func render(img *image.RGBA) {
 		go func() {
 			for i := 1; ; i++ {
 				if _, k := <- progress; !k { break }
-				fmt.Printf("\r%d/%d (%d%%)", i, imgWidth, int(100*(float64(i) / float64(imgWidth))))
+				fmt.Printf("\r%d/%d (%d%%)", i, imgHeight, int(100*(float64(i) / float64(imgHeight))))
 			}
 			fmt.Println()
 		}()
 	}
 
 	var wg sync.WaitGroup
-	for y := 0; y < imgWidth; y++ {
+	for y := 0; y < imgHeight; y++ {
 		wg.Add(1)
 		go func(y int) {
 			for x := 0; x < imgWidth; x++ {
