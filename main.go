@@ -6,23 +6,25 @@ import (
 	"image/color"
 	"image/png"
 	"log"
+	"math/rand"
 	"os"
 	"sync"
+	"time"
 )
 
 const (
 	// Position and size
-	//px   = -0.5557506
-	//py   = -0.55560
-	//size = 0.000000001
-	px    = -2
-	py    = -1.2
-	size  = 2.5
+	px   = -0.5557506
+	py   = -0.55560
+	size = 0.000000001
+	//px   = -2
+	//py   = -1.2
+	//size = 2.5
 
 	// Quality
-	imgWidth = 2048
-	maxIter  = 1500
-	samples  = 2
+	imgWidth = 1024
+	maxIter  = 1000
+	samples  = 50
 
 	showProgress = true
 )
@@ -32,7 +34,11 @@ func main() {
 	img := image.NewRGBA(image.Rect(0, 0, imgWidth, imgWidth))
 
 	log.Println("Rendering...")
+	start := time.Now()
 	render(img)
+	end := time.Now()
+
+	log.Println("Done rendering in", end.Sub(start))
 
 	log.Println("Encoding image...")
 	f, err := os.Create("result.png")
@@ -47,23 +53,29 @@ func main() {
 }
 
 func render(img *image.RGBA) {
+	progress := make(chan struct{})
+
+	// Progress
 	if showProgress {
-		fmt.Printf("0/%d (0%%)", imgWidth)
+		go func() {
+			for i := 1; ; i++ {
+				if _, k := <- progress; !k { break }
+				fmt.Printf("\r%d/%d (%d%%)", i, imgWidth, int(100*(float64(i) / float64(imgWidth))))
+			}
+			fmt.Println()
+		}()
 	}
 
 	var wg sync.WaitGroup
 	for y := 0; y < imgWidth; y++ {
-		for x := 0; x < imgWidth; x++ {
-			wg.Add(1)
-			x, y := x, y
-			go func() {
-				var sampledColours [samples*samples]color.RGBA
-				for sy := 0.0; sy < samples; sy++ {
-					for sx := 0.0; sx < samples; sx++ {
-						nx := size * ((float64(x) + sx / (samples*samples)) / float64(imgWidth)) + px
-						ny := size * ((float64(y) + sy / (samples*samples)) / float64(imgWidth)) + py
-						sampledColours[int(sy*samples+sx)] = paint(mandelbrotIter(nx, ny, maxIter))
-					}
+		wg.Add(1)
+		go func(y int) {
+			for x := 0; x < imgWidth; x++ {
+				var sampledColours [samples]color.RGBA
+				for i := 0; i < samples; i++ {
+					nx := size * ((float64(x) + rand.Float64()) / float64(imgWidth)) + px
+					ny := size * ((float64(y) + rand.Float64()) / float64(imgWidth)) + py
+					sampledColours[i] = paint(mandelbrotIter(nx, ny, maxIter))
 				}
 				var r, g, b int
 				for _, colour := range sampledColours {
@@ -72,22 +84,20 @@ func render(img *image.RGBA) {
 					b += int(colour.B)
 				}
 				img.SetRGBA(x, y, color.RGBA{
-					R: uint8(float64(r) / float64(samples*samples)),
-					G: uint8(float64(g) / float64(samples*samples)),
-					B: uint8(float64(b) / float64(samples*samples)),
+					R: uint8(float64(r) / float64(samples)),
+					G: uint8(float64(g) / float64(samples)),
+					B: uint8(float64(b) / float64(samples)),
 					A: 255,
 				})
-				wg.Done()
-			}()
-		}
-		wg.Wait()
-		if showProgress {
-			fmt.Printf("\r%d/%d (%d%%)", y, imgWidth, int(100*(float64(y) / float64(imgWidth))))
-		}
+			}
+			if showProgress {
+				progress <- struct{}{}
+			}
+			wg.Done()
+		}(y)
 	}
-	if showProgress {
-		fmt.Printf("\r%[1]d/%[1]d (100%%)\n", imgWidth)
-	}
+	wg.Wait()
+	close(progress)
 }
 
 func paint(r float64, n int) color.RGBA {
@@ -115,3 +125,20 @@ func mandelbrotIter(px, py float64, maxIter int) (float64, int) {
 
 	return xx + yy, maxIter
 }
+
+// by u/Boraini
+//func mandelbrotIterComplex(px, py float64, maxIter int) (float64, int) {
+//	var current complex128
+//	pxpy := complex(px, py)
+//
+//	for i := 0; i < maxIter; i++ {
+//		magnitude := cmplx.Abs(current)
+//		if magnitude > 2 {
+//			return magnitude * magnitude, i
+//		}
+//		current = current * current + pxpy
+//	}
+//
+//	magnitude := cmplx.Abs(current)
+//	return magnitude * magnitude, maxIter
+//}
