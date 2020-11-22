@@ -13,18 +13,20 @@ import (
 	"time"
 )
 
+// Configuration
 const (
-	// Position and size
-	px   = -0.5557506
-	py   = -0.55560
-	size = 0.000000001
-	//px   = -2
-	//py   = -1.2
-	//size = 2.5
+	// Position and height
+	px = -0.5557506
+	py = -0.55560
+	ph = 0.000000001
+	//px = -2
+	//py = -1.2
+	//pw = 2.5
 
 	// Quality
-	imgWidth     = 2048
-	maxIter      = 1000
+	imgWidth     = 1920
+	imgHeight    = 1080
+	maxIter      = 1500
 	samples      = 20
 	linearMixing = true
 
@@ -32,9 +34,13 @@ const (
 	profileCpu   = true
 )
 
+const (
+	ratio = float64(imgWidth) / float64(imgHeight)
+)
+
 func main() {
 	log.Println("Allocating image...")
-	img := image.NewRGBA(image.Rect(0, 0, imgWidth, imgWidth))
+	img := image.NewRGBA(image.Rect(0, 0, imgWidth, imgHeight))
 
 	log.Println("Rendering...")
 	start := time.Now()
@@ -73,8 +79,8 @@ func render(img *image.RGBA) {
 				for x := 0; x < imgWidth; x++ {
 					var r, g, b int
 					for i := 0; i < samples; i++ {
-						nx := size * ((float64(x) + rand.Float64()) / float64(imgWidth)) + px
-						ny := size * ((float64(y) + rand.Float64()) / float64(imgWidth)) + py
+						nx := ph * ratio * ((float64(x) + rand.Float64()) / float64(imgWidth)) + px
+						ny := ph * ((float64(y) + rand.Float64()) / float64(imgHeight)) + py
 						c := paint(mandelbrotIter(nx, ny, maxIter))
 						if linearMixing {
 							r += int(RGBToLinear(c.R))
@@ -102,14 +108,14 @@ func render(img *image.RGBA) {
 		}()
 	}
 
-	for y := 0; y < imgWidth; y++ {
+	for y := 0; y < imgHeight; y++ {
 		jobs <- y
 		if showProgress {
-			fmt.Printf("\r%d/%d (%d%%)", y, imgWidth, int(100*(float64(y) / float64(imgWidth))))
+			fmt.Printf("\r%d/%d (%d%%)", y, imgHeight, int(100*(float64(y) / float64(imgHeight))))
 		}
 	}
 	if showProgress {
-		fmt.Printf("\r%d/%[1]d (100%%)\n", imgWidth)
+		fmt.Printf("\r%d/%[1]d (100%%)\n", imgHeight)
 	}
 }
 
