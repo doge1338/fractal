@@ -6,7 +6,6 @@ import (
 	"image/color"
 	"image/png"
 	"log"
-	"math/rand"
 	"os"
 	"runtime"
 	"runtime/pprof"
@@ -21,17 +20,17 @@ const (
 	ph = 0.000000001
 	//px = -2
 	//py = -1.2
-	//pw = 2.5
+	//ph = 2.5
 
 	// Quality
-	imgWidth     = 1920
-	imgHeight    = 1080
+	imgWidth     = 1024
+	imgHeight    = 1024
 	maxIter      = 1500
-	samples      = 20
+	samples      = 50
 	linearMixing = true
 
 	showProgress = true
-	profileCpu   = true
+	profileCpu   = false
 )
 
 const (
@@ -79,8 +78,8 @@ func render(img *image.RGBA) {
 				for x := 0; x < imgWidth; x++ {
 					var r, g, b int
 					for i := 0; i < samples; i++ {
-						nx := ph * ratio * ((float64(x) + rand.Float64()) / float64(imgWidth)) + px
-						ny := ph * ((float64(y) + rand.Float64()) / float64(imgHeight)) + py
+						nx := ph * ratio * ((float64(x) + RandFloat64()) / float64(imgWidth)) + px
+						ny := ph * ((float64(y) + RandFloat64()) / float64(imgHeight)) + py
 						c := paint(mandelbrotIter(nx, ny, maxIter))
 						if linearMixing {
 							r += int(RGBToLinear(c.R))
