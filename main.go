@@ -10,6 +10,7 @@ import (
 	"os"
 	"runtime"
 	"runtime/pprof"
+	"sync"
 	"time"
 )
 
@@ -73,8 +74,12 @@ func render(img *image.RGBA) {
 
 	jobs := make(chan int)
 
+	var wg sync.WaitGroup
+	wg.Add(runtime.NumCPU())
 	for i := 0; i < runtime.NumCPU(); i++ {
 		go func() {
+			defer wg.Done()
+
 			s := rand.New(rand.NewSource(int64(time.Now().UnixNano())))
 
 			for y := range jobs {
@@ -116,6 +121,9 @@ func render(img *image.RGBA) {
 			fmt.Printf("\r%d/%d (%d%%)", y, imgHeight, int(100*(float64(y)/float64(imgHeight))))
 		}
 	}
+	close(jobs)
+	wg.Wait()
+
 	if showProgress {
 		fmt.Printf("\r%d/%[1]d (100%%)\n", imgHeight)
 	}
