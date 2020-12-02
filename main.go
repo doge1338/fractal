@@ -46,7 +46,7 @@ func init() {
 	flag.Float64Var(&conf.step, "step", 0.25, "step per cycle of each multiplier")
 	flag.Float64Var(&conf.maximg, "maximg", 10.00, "maximum value of Multiplier")
 	flag.IntVar(&conf.width, "width", 1024, "image width")
-	flag.IntVar(&conf.height, "width", 1024, "image height")
+	flag.IntVar(&conf.height, "height", 1024, "image height")
 	flag.IntVar(&conf.iter, "iterations", 1024, "Max number of iterations")
 	flag.IntVar(&conf.debug, "debug", 0, "Enable debugging output")
 	flag.IntVar(&conf.samples, "samples", 512, "Number of color samples to be made")
