@@ -14,5 +14,5 @@ func RandUint64() uint64 {
 }
 
 func RandFloat64() float64 {
-	return float64(RandUint64() / 2) / (1 << 63)
+	return float64(RandUint64()/2) / (1 << 63)
 }
