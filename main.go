@@ -18,6 +18,7 @@ type Config struct {
 	ph         float64
 	maximg     float64
 	step       float64
+	hstep      float64
 	multiplier float64
 	width      int
 	height     int
@@ -34,7 +35,7 @@ type Config struct {
 }
 
 var conf Config
-var px, py, ph, multiplier, step float64
+var px, py, ph, multiplier, step, hstep float64
 var File string
 
 func init() {
@@ -44,6 +45,7 @@ func init() {
 	flag.Float64Var(&conf.ph, "ph", 0.08125, "Starting value of ph")
 	flag.Float64Var(&conf.multiplier, "multiplier", 0.00, "Starting value of the multiplier")
 	flag.Float64Var(&conf.step, "step", 0.25, "step per cycle of each multiplier")
+	flag.Float64Var(&conf.hstep, "hstep", 0.0025, "ph step per cycle of each multiplier")
 	flag.Float64Var(&conf.maximg, "maximg", 10.00, "maximum value of Multiplier")
 	flag.IntVar(&conf.width, "width", 1024, "image width")
 	flag.IntVar(&conf.height, "height", 1024, "image height")
@@ -71,11 +73,12 @@ func main() {
 	py = conf.py
 	ph = conf.ph
 	step = conf.step
+	hstep = conf.hstep
 
 	MainStart := time.Now()
 	for multiplier = conf.multiplier; multiplier <= conf.maximg; multiplier = multiplier + conf.step {
 
-		dbg(2, "px = %f, py = %f, ph = %f, multiplier = %f, step = %f", px, py, ph, multiplier, step)
+		dbg(2, "px = %f, py = %f, ph = %f, multiplier = %f, step = %f hstep=%f", px, py, ph, multiplier, step, hstep)
 		dbg(1, "Rendering")
 
 		start := time.Now()
@@ -86,9 +89,9 @@ func main() {
 		dbg(2, "Cumulative Time: %v", end.Sub(MainStart))
 
 		if conf.prepend != "" {
-			File = fmt.Sprintf("%s-%f.png", conf.prepend, conf.multiplier)
+			File = fmt.Sprintf("%s-%f.png", conf.prepend, multiplier)
 		} else {
-			File = fmt.Sprintf("%d-%f.png", time.Now().Unix(), conf.multiplier)
+			File = fmt.Sprintf("%d-%f.png", time.Now().Unix(), multiplier)
 		}
 
 		dbg(1, "Encoding image into %s", File)
@@ -104,14 +107,14 @@ func main() {
 
 		dbg(1, "Completed")
 
-		px = px - (step * 2)
-		py = py - (step * 2)
-		ph = ph + step
+//		px = px - (hstep * 2)
+//		py = py - (hstep * 2)
+		ph = ph + hstep
 	}
 	if conf.reverse == true {
-		for multiplier := conf.multiplier; multiplier <= conf.maximg; multiplier = multiplier + conf.step {
+		for multiplier = conf.multiplier; multiplier <= conf.maximg; multiplier = multiplier + conf.step {
 
-			dbg(2, "px = %f, py = %f, ph = %f, multiplier = %f, step = %f", px, py, ph, multiplier, step)
+			dbg(2, "px = %f, py = %f, ph = %f, multiplier = %f, step = %f hstep=%f", px, py, ph, multiplier, step, hstep)
 			dbg(1, "Rendering")
 
 			start := time.Now()
@@ -122,9 +125,9 @@ func main() {
 			dbg(2, "Cumulative Time: %v", end.Sub(MainStart))
 
 			if conf.prepend != "" {
-				File = fmt.Sprintf("%s-%f.png", conf.prepend, conf.multiplier)
+				File = fmt.Sprintf("%s-%f.png", conf.prepend, multiplier)
 			} else {
-				File = fmt.Sprintf("%d-%f.png", time.Now().Unix(), conf.multiplier)
+				File = fmt.Sprintf("%d-%f.png", time.Now().Unix(), multiplier)
 			}
 
 			dbg(1, "Encoding image into %s", File)
@@ -141,14 +144,14 @@ func main() {
 
 			dbg(1, "Completed")
 
-			px = px + (step * 2)
-			py = py + (step * 2)
-			ph = ph - step
+//			px = px + (hstep * 2)
+//			py = py + (hstep * 2)
+			ph = ph - hstep
 		}
 	}
 
 	MainEnd := time.Now()
-	dbg(1, "Completed in: ", MainEnd.Sub(MainStart))
+	dbg(1, "Completed in: %v", MainEnd.Sub(MainStart))
 }
 
 func render(img *image.RGBA) {
@@ -187,9 +190,9 @@ func render(img *image.RGBA) {
 					}
 					var cr, cg, cb uint8
 					if conf.useLinear {
-						cr = LinearToRGB(uint16(float64(r)/float64(conf.samples))) + uint8(conf.multiplier*10)
-						cg = LinearToRGB(uint16(float64(g)/float64(conf.samples))) + uint8(conf.multiplier*10)
-						cb = LinearToRGB(uint16(float64(b)/float64(conf.samples))) + uint8(conf.multiplier*10)
+						cr = LinearToRGB(uint16(float64(r)/float64(conf.samples))) + uint8(multiplier*10)
+						cg = LinearToRGB(uint16(float64(g)/float64(conf.samples))) + uint8(multiplier*10)
+						cb = LinearToRGB(uint16(float64(b)/float64(conf.samples))) + uint8(multiplier*10)
 					} else {
 						cr = uint8(float64(r) / float64(conf.samples))
 						cg = uint8(float64(g) / float64(conf.samples))
