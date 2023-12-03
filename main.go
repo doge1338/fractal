@@ -6,9 +6,11 @@ import (
 	"image/color"
 	"image/png"
 	"log"
+	"math/rand"
 	"os"
 	"runtime"
 	"runtime/pprof"
+	"sync"
 	"time"
 )
 
@@ -72,14 +74,20 @@ func render(img *image.RGBA) {
 
 	jobs := make(chan int)
 
+	var wg sync.WaitGroup
+	wg.Add(runtime.NumCPU())
 	for i := 0; i < runtime.NumCPU(); i++ {
-		go func () {
+		go func() {
+			defer wg.Done()
+
+			s := rand.New(rand.NewSource(int64(time.Now().UnixNano())))
+
 			for y := range jobs {
 				for x := 0; x < imgWidth; x++ {
 					var r, g, b int
 					for i := 0; i < samples; i++ {
-						nx := ph * ratio * ((float64(x) + RandFloat64()) / float64(imgWidth)) + px
-						ny := ph * ((float64(y) + RandFloat64()) / float64(imgHeight)) + py
+						nx := ph*ratio*((float64(x)+s.Float64())/float64(imgWidth)) + px
+						ny := ph*((float64(y)+s.Float64())/float64(imgHeight)) + py
 						c := paint(mandelbrotIter(nx, ny, maxIter))
 						if linearMixing {
 							r += int(RGBToLinear(c.R))
@@ -101,7 +109,7 @@ func render(img *image.RGBA) {
 						cg = uint8(float64(g) / float64(samples))
 						cb = uint8(float64(b) / float64(samples))
 					}
-					img.SetRGBA(x, y, color.RGBA{ R: cr, G: cg, B: cb, A: 255 })
+					img.SetRGBA(x, y, color.RGBA{R: cr, G: cg, B: cb, A: 255})
 				}
 			}
 		}()
@@ -110,19 +118,22 @@ func render(img *image.RGBA) {
 	for y := 0; y < imgHeight; y++ {
 		jobs <- y
 		if showProgress {
-			fmt.Printf("\r%d/%d (%d%%)", y, imgHeight, int(100*(float64(y) / float64(imgHeight))))
+			fmt.Printf("\r%d/%d (%d%%)", y, imgHeight, int(100*(float64(y)/float64(imgHeight))))
 		}
 	}
+	close(jobs)
+	wg.Wait()
+
 	if showProgress {
 		fmt.Printf("\r%d/%[1]d (100%%)\n", imgHeight)
 	}
 }
 
 func paint(r float64, n int) color.RGBA {
-	insideSet := color.RGBA{ R: 255, G: 255, B: 255, A: 255 }
+	insideSet := color.RGBA{R: 255, G: 255, B: 255, A: 255}
 
 	if r > 4 {
-		return hslToRGB(float64(n) / 800 * r, 1, 0.5)
+		return hslToRGB(float64(n)/800*r, 1, 0.5)
 	}
 
 	return insideSet
@@ -132,12 +143,12 @@ func mandelbrotIter(px, py float64, maxIter int) (float64, int) {
 	var x, y, xx, yy, xy float64
 
 	for i := 0; i < maxIter; i++ {
-		xx, yy, xy = x * x, y * y, x * y
-		if xx + yy > 4 {
+		xx, yy, xy = x*x, y*y, x*y
+		if xx+yy > 4 {
 			return xx + yy, i
 		}
 		x = xx - yy + px
-		y = 2 * xy + py
+		y = 2*xy + py
 	}
 
 	return xx + yy, maxIter
